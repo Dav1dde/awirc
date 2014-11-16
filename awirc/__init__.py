@@ -63,7 +63,7 @@ class Client(Connection, Protocol, EventManager):
                 if not normal_msgs:
                     return
 
-                msg.args[1] = normal_msgs
+                msg.args[1] = ' '.join(normal_msgs)
 
             if is_chan:
                 if is_priv:

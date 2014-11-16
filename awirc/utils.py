@@ -131,7 +131,7 @@ def extract_ctcp(s):
     extended_msgs is a list of (tag, data) tuples'''
     messages = s.split(X_DELIM)
 
-    normal_msgs = filter(None, messages[::2])
+    normal_msgs = list(filter(None, messages[::2]))
     extended_msgs = list()
 
     # messages[1::2] = extended_msgs
