@@ -2,7 +2,7 @@ import awirc
 
 import random
 
-def debug_message(type, source, target, client, args):
+def debug_message(type, source, target, args):
     if type == 'RAW_MESSAGE':
         return
 

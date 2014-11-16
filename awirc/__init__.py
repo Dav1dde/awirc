@@ -28,7 +28,7 @@ class Client(Connection, Protocol, EventManager):
             self.bind(evt, handler)
 
     def line_received(self, line):
-        self.process_event('RAW_MESSAGE', self.server_name, None, self, line)
+        self.process_event('RAW_MESSAGE', self.server_name, None, line)
 
         line = awirc.utils.low_dequote(line.rstrip())
         msg = awirc.utils.parse_line(line)
@@ -57,7 +57,7 @@ class Client(Connection, Protocol, EventManager):
                     for tag, data in extended_msgs:
                         type_ = 'CTCP_' if is_priv else 'CTCPREPLY_'
                         self.process_event(
-                            type_+tag, msg.prefix, target, self, data
+                            type_+tag, msg.prefix, target, data
                         )
 
                 if not normal_msgs:
@@ -74,11 +74,14 @@ class Client(Connection, Protocol, EventManager):
                 msg.command = 'PRIVNOTICE'
             #else
             #    msg.command = 'PRIVMSG'
+
+            msg.args = msg.args[1]
         elif msg.command in ('KICK', 'BAN', 'MODE', 'JOIN', 'PART'):
             target = msg.args[0]
+            msg.args = msg.args[1:]
 
         self.process_event(
-            msg.command, msg.prefix, target, self, msg.args
+            msg.command, msg.prefix, target, msg.args
         )
 
     def disconnect(self, msg=''):
@@ -96,12 +99,12 @@ class Client(Connection, Protocol, EventManager):
         self.user(self.realname, self.username)
 
         self.process_event(
-            'CONNECT', self.server_name, None, self, None
+            'CONNECT', self.server_name, None, None
         )
 
     def handle_disconnect(self):
         self.process_event(
-            'DISCONNECT', self.server_name, None, self, None
+            'DISCONNECT', self.server_name, None, None
         )
 
     def nick(self, newnick):
@@ -109,13 +112,13 @@ class Client(Connection, Protocol, EventManager):
         self.nickname = newnick
 
     # intern events
-    def handle_001(self, event_type, source, target, client, args):
+    def handle_001(self, event_type, source, target, args):
         self.nickname = args[0]
 
-    def handle_005(self, event_type, source, target, client, args):
+    def handle_005(self, event_type, source, target, args):
         f, b = awirc.utils.parse_005(args)
         self.rpl_isupport[0].extend(f)
         self.rpl_isupport[1].update(b)
 
-    def handle_pong(self, event_type, source, target, client, args):
+    def handle_pong(self, event_type, source, target, args):
         self.pong(*args[:2])
