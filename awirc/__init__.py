@@ -7,6 +7,11 @@ from awirc.socket import Connection
 import awirc.utils
 
 
+from awirc.monkey import patch as _patch
+_patch()
+del _patch
+
+
 class Client(Connection, EventManager, Protocol):
     def __init__(self, nickname, host, port, ssl=False,
                  username=None, realname=None, password=None):
