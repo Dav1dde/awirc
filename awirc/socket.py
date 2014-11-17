@@ -9,22 +9,19 @@ import awirc.utils
 
 
 class Connection(object):
-    def __init__(self, host, port, ssl=False):
+    def __init__(self, pool, host, port, ssl=False):
+        self._pool = pool
+
         self.host = host
         self.port = port
         self.ssl = ssl
 
         self._socket = None
-        self._worker = gevent.pool.Group()
 
         self._chunk_size = 4096
 
         self._connected = False
         self._out_queue = gevent.queue.Queue()
-
-    @property
-    def worker(self):
-        return self._worker
 
     def connect(self, timeout=10, source=None, ssl_args=None):
         if ssl_args is None:
@@ -41,8 +38,8 @@ class Connection(object):
 
         gevent.socket.wait_write(self._socket.fileno(), timeout=timeout)
         self._connected = True
-        self._worker.spawn(self._read)
-        self._worker.spawn(self._write)
+        self._pool.spawn(self._read)
+        self._pool.spawn(self._write)
 
         gevent.spawn(self.handle_connect)
 
@@ -55,7 +52,7 @@ class Connection(object):
 
             if not incoming:
                 self._connected = False
-                self._worker.spawn(self.handle_disconnect)
+                self._pool.spawn(self.handle_disconnect)
                 return
 
             try:
@@ -67,7 +64,7 @@ class Connection(object):
             while '\n' in buffer:
                 line, buffer = buffer.split('\n', 1)
 
-                self._worker.spawn(self.line_received, line.strip())
+                self._pool.spawn(self.line_received, line.strip())
 
     def _write(self):
         while self._connected:
@@ -87,8 +84,6 @@ class Connection(object):
     def close(self):
         self._socket.shutdown()
         self._socket.close()
-
-        self._worker.kill(block=False)
 
     def handle_connect(self):
         pass

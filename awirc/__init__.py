@@ -1,4 +1,5 @@
 from collections import defaultdict
+import gevent.pool
 
 from awirc.event import EventManager
 from awirc.protocol import Protocol
@@ -6,13 +7,14 @@ from awirc.socket import Connection
 import awirc.utils
 
 
-class Client(Connection, Protocol, EventManager):
+class Client(Connection, EventManager, Protocol):
     def __init__(self, nickname, host, port, ssl=False,
                  username=None, realname=None, password=None):
+        self._pool = gevent.pool.Group()
 
-        Connection.__init__(self, host, port, ssl=ssl)
+        Connection.__init__(self, self._pool, host, port, ssl=ssl)
+        EventManager.__init__(self, self._pool)
         Protocol.__init__(self)
-        EventManager.__init__(self)
 
         self.nickname = nickname
         self.username = username or self.nickname
@@ -26,6 +28,10 @@ class Client(Connection, Protocol, EventManager):
                              ('005', self.handle_005),
                              ('PING', self.handle_pong)]:
             self.bind(evt, handler)
+
+    @property
+    def gevent_pool(self):
+        return self._pool
 
     def line_received(self, line):
         self.process_event('RAW_MESSAGE', self.server_name, None, line)
@@ -87,6 +93,8 @@ class Client(Connection, Protocol, EventManager):
     def disconnect(self, msg=''):
         self.quit(msg)
         self.close()
+
+        self._pool.kill()
 
     def handle_connect(self):
         self.host, self.port = self._socket.getpeername()

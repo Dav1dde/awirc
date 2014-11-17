@@ -6,7 +6,9 @@ import awirc.utils
 # maybe blinker
 
 class EventManager(object):
-    def __init__(self):
+    def __init__(self, pool):
+        self._pool = pool
+
         self._events = defaultdict(list)
 
     def bind(self, event_type, handler):
@@ -26,6 +28,6 @@ class EventManager(object):
 
         for key in evt_keys:
             for handler in self._events[key]:
-                handler(event_type, *args)
+                self._pool.spawn(handler, event_type, *args)
 
 

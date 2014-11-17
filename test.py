@@ -17,7 +17,7 @@ def main():
     c.bind('*', debug_message)
     c.connect()
 
-    c.worker.join()
+    c.gevent_pool.join()
 
 
 if __name__ == '__main__':
