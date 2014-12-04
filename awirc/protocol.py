@@ -24,7 +24,7 @@ class Prefix(object):
             return self.host
 
     def __repr__(self):
-        return 'IRCPrefix(nick={!r}, user={!r}, host={!r})'.format(
+        return 'Prefix(nick={!r}, user={!r}, host={!r})'.format(
             self.nick, self.user, self.host
         )
 
