@@ -48,10 +48,16 @@ class Connection(object):
 
         while self._connected:
             gevent.socket.wait_read(self._socket.fileno())
-            incoming = self._socket.recv(self._chunk_size)
+            incoming = ''
+            try:
+                incoming = self._socket.recv(self._chunk_size)
+            except ConnectionError:
+                pass
 
             if not incoming:
                 self._connected = False
+                # we use None to flush the write greenlet
+                self._out_queue.put(None)
                 self._pool.spawn(self.handle_disconnect)
                 return
 
@@ -69,7 +75,10 @@ class Connection(object):
     def _write(self):
         while self._connected:
             message = self._out_queue.get()
-            self._socket.sendall(message)
+            # None is used to flush queue, so we can exit
+            # properly on a disconnect
+            if message is not None:
+                self._socket.sendall(message)
 
     def send(self, data):
         message = awirc.utils.low_quote(data)
