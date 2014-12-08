@@ -106,7 +106,6 @@ class Client(Connection, EventManager, Protocol):
 
         if self.password:
             self.pass_(self.password)
-            self.password = None
 
         self.nick(self.nickname)
         self.user(self.realname, self.username)
