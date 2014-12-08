@@ -120,7 +120,7 @@ class Client(Connection, EventManager, Protocol):
         )
 
     def nick(self, newnick):
-        super().nick(newnick)
+        Protocol.nick(self, newnick)
         self.nickname = newnick
 
     # intern events
