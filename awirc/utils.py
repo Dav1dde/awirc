@@ -5,9 +5,6 @@ import textwrap
 from awirc.protocol import Message
 
 
-DEBUG = False
-
-
 # protocol helpers
 def parse_line(s):
     prefix = ''
@@ -79,7 +76,7 @@ M_DEQUOTE_TABLE = dict([(v, k) for k, v in M_QUOTE_TABLE.items()])
 
 
 def low_quote(s):
-    for c in (M_QUOTE, NUL, NL, CR):  # content of M_QUOTE_TABLE
+    for c in M_QUOTE_TABLE:
         s = s.replace(c, M_QUOTE_TABLE[c])
     return s
 
@@ -210,14 +207,3 @@ def get_type(val, *types):
         except ValueError:
             pass
     return val
-
-
-def debug(msg, additional=''):
-    if DEBUG:
-        print('debug ({}): {}'.format((additional), pformat(msg)))
-
-
-def set_debug(debug=True):
-    '''sets debugging, True or False'''
-    global DEBUG
-    DEBUG = debug
