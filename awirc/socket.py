@@ -9,6 +9,9 @@ import awirc.utils
 
 
 class Connection(object):
+    delimiter = '\r\n'
+    chunk_size = 4096
+
     def __init__(self, pool, host, port, ssl=False):
         self._pool = pool
 
@@ -17,8 +20,6 @@ class Connection(object):
         self.ssl = ssl
 
         self._socket = None
-
-        self._chunk_size = 4096
 
         self._connected = False
         self._out_queue = gevent.queue.Queue()
@@ -53,7 +54,7 @@ class Connection(object):
 
             incoming = ''
             try:
-                incoming = self._socket.recv(self._chunk_size)
+                incoming = self._socket.recv(self.chunk_size)
             except ConnectionError:
                 pass
 
@@ -66,9 +67,8 @@ class Connection(object):
                 incoming = incoming.decode('iso-8859-1', errors='ignore')
 
             buffer += incoming
-            while '\n' in buffer:
-                line, buffer = buffer.split('\n', 1)
-
+            while self.delimiter in buffer:
+                line, buffer = buffer.split(self.delimiter, 1)
                 self._pool.spawn(self.line_received, line.strip())
 
         self.handle_disconnect()
@@ -80,12 +80,8 @@ class Connection(object):
 
     def send(self, data):
         message = awirc.utils.low_quote(data)
-
-        if not message.endswith('\r\n'):
-            message = '{}\r\n'.format(message)
-
+        message = message + self.delimiter
         message = message.encode('utf-8')
-
         self._out_queue.put(message)
 
     def terminate(self, block=True, timeout=None):
