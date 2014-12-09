@@ -37,17 +37,20 @@ class Connection(object):
             self._socket = gevent.ssl.wrap_socket(self._socket, **ssl_args)
 
         gevent.socket.wait_write(self._socket.fileno(), timeout=timeout)
-        self._connected = True
-        self._pool.spawn(self._read)
+        read = self._pool.spawn(self._read)
+        # the read greenlet exits (e.g. other end closes connection, timeout)
+        # but the write greenlet will still wait for information
+        read.link(lambda g: self.terminate())
         self._pool.spawn(self._write)
 
-        gevent.spawn(self.handle_connect)
+        self.handle_connect()
 
     def _read(self):
         buffer = ''
 
-        while self._connected:
+        while True:
             gevent.socket.wait_read(self._socket.fileno())
+
             incoming = ''
             try:
                 incoming = self._socket.recv(self._chunk_size)
@@ -55,11 +58,7 @@ class Connection(object):
                 pass
 
             if not incoming:
-                self._connected = False
-                # we use None to flush the write greenlet
-                self._out_queue.put(None)
-                self._pool.spawn(self.handle_disconnect)
-                return
+                break
 
             try:
                 incoming = incoming.decode('utf-8')
@@ -72,13 +71,12 @@ class Connection(object):
 
                 self._pool.spawn(self.line_received, line.strip())
 
+        self.handle_disconnect()
+
     def _write(self):
-        while self._connected:
+        while True:
             message = self._out_queue.get()
-            # None is used to flush queue, so we can exit
-            # properly on a disconnect
-            if message is not None:
-                self._socket.sendall(message)
+            self._socket.sendall(message)
 
     def send(self, data):
         message = awirc.utils.low_quote(data)
@@ -90,9 +88,15 @@ class Connection(object):
 
         self._out_queue.put(message)
 
-    def close(self):
-        self._socket.shutdown()
-        self._socket.close()
+    def terminate(self, block=True, timeout=None):
+        try:
+            self._socket.shutdown(gevent.socket.SHUT_RDWR)
+            self._socket.close()
+        except OSError:
+            # Connection already down
+            pass
+
+        self._pool.kill(block=block, timeout=timeout)
 
     def handle_connect(self):
         pass
