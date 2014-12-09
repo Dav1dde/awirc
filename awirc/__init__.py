@@ -97,9 +97,7 @@ class Client(Connection, EventManager, Protocol):
 
     def disconnect(self, msg=''):
         self.quit(msg)
-        self.close()
-
-        self._pool.kill()
+        self.terminate()
 
     def handle_connect(self):
         self.host, self.port = self._socket.getpeername()
