@@ -1,5 +1,4 @@
 from collections import defaultdict
-from abc import ABCMeta, abstractclassmethod
 
 import awirc.utils
 
@@ -50,7 +49,7 @@ class Message(object):
         )
 
 
-class Protocol(metaclass=ABCMeta):
+class Protocol(object):
     def __init__(self):
         self.rpl_isupport = (list(), defaultdict(tuple))
 
@@ -208,7 +207,6 @@ class Protocol(metaclass=ABCMeta):
     def whowas(self, nick, max='', server=''):
         self.send('WHOWAS {} {} {}'.format(nick, max, server))
 
-    @abstractclassmethod
     def send(self, msg):
         raise NotImplementedError
 
